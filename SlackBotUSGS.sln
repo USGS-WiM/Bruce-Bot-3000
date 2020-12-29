@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30804.86
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "SlackBotUSGS", "SlackBotUSGS.njsproj", "{E6106726-2C99-4FDA-947C-EDCE649DF5EB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E6106726-2C99-4FDA-947C-EDCE649DF5EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6106726-2C99-4FDA-947C-EDCE649DF5EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6106726-2C99-4FDA-947C-EDCE649DF5EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6106726-2C99-4FDA-947C-EDCE649DF5EB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2CDAADA7-6663-4CE4-9254-8225DCC6D640}
+	EndGlobalSection
+EndGlobal

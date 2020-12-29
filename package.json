@@ -1,0 +1,17 @@
+{
+  "name": "slack-bot-usgs",
+  "version": "0.0.0",
+  "description": "SlackBotUSGS",
+  "main": "app.js",
+  "author": {
+    "name": ""
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.5",
+    "dotenv": "^8.2.0",
+    "open": "^7.3.0",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.6",
+    "slackbots": "^1.2.0"
+  }
+}
