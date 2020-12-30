@@ -3,7 +3,7 @@
 const https = require('https');
 
 // only custom thing we need to change for the specific channel we want to use. This webhook links up to one of my channels on my page
-const webHookURL = 'https://hooks.slack.com/services/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';
+const webHookURL = "ENTER YOUR WEB HOOK URL HERE";
 
 
 // we can create a loop in here if we want so it sends a message every day, or use aws lambda
