@@ -3,20 +3,12 @@
   "version": "1.0.0",
   "description": "SlackBotUSGS",
   "main": "app.js",
-  "scripts": {
-    "start": "node app.js"
-  },
   "author": {
     "name": "Christopher Sullivan"
   },
   "dependencies": {
-    "@slack/bolt": "^2.5.0",
-    "axios": "^0.21.1",
     "cheerio": "^1.0.0-rc.5",
-    "dotenv": "^8.2.0",
-    "open": "^7.3.0",
     "request": "^2.88.2",
-    "request-promise": "^4.2.6",
-    "slackbots": "^1.2.0"
+    "request-promise": "^4.2.6"
   }
 }

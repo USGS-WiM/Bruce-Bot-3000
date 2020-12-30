@@ -1,12 +1,79 @@
 'use strict';
 
+const https = require('https');
+
+// only custom thing we need to change for the specific channel we want to use. This webhook links up to one of my channels on my page
+const webHookURL = 'https://hooks.slack.com/services/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';
 
 
-function randomNumber(min, max) {
-    return Math.floor(Math.random() * (max - min) + min);
+// we can create a loop in here if we want so it sends a message every day, or use aws lambda
+(async function () {
+
+    console.log('Sending slack message');
+    try {
+        const message = await getPhraseAndHoliday(new Date());
+        const slackResponse = await sendSlackMessage(webHookURL, message);
+        console.log('Message response', slackResponse);
+    } catch (e) {
+        console.error('There was a error with the request', e);
+    }
+})();
+
+
+function sendSlackMessage(webHookURL, message) {
+
+    const messageBody = {
+        username: 'Bruce Bot Reminder', // This will appear as user name who posts the message
+        text: message // text
+    };
+
+    console.log("Attemping to send this message: \n" + message);
+
+    const jsonMessage = JSON.stringify(messageBody);
+
+    // Promisify the https.request
+    return new Promise((resolve, reject) => {
+        // general request options, we defined that it's a POST request and content is JSON
+        const requestOptions = {
+            method: 'POST',
+            header: {
+                'Content-Type': 'application/json'
+            }
+        };
+
+        // try the request
+        const req = https.request(webHookURL, requestOptions, (res) => {
+            let response = '';
+
+
+            res.on('data', (d) => {
+                response += d;
+            });
+
+            // response finished, resolve the promise with data
+            res.on('end', () => {
+                resolve(response);
+            })
+        });
+
+        // there was an error, reject the promise
+        req.on('error', (e) => {
+            reject(e);
+        });
+
+        // send our message body (was parsed to JSON beforehand)
+        req.write(jsonMessage);
+        req.end();
+    });
 }
 
-async function getPhraseAndHoliday() {
+
+/**
+ * Function that parses the "quotable-quotes" file and finds a random quote, then combines that quote with a random holiday that occurs
+ * on the given Date. Currently scrapes holidaycalendars.com to gather holiday information
+ * @param {any} date the Date object of the particular day one wants to gather holiday information from
+ */
+async function getPhraseAndHoliday(date) {
     // default answer
     var result = "Today we failed getting the holiday information, for some reason. Regardless, check in!";
 
@@ -22,7 +89,7 @@ async function getPhraseAndHoliday() {
     // a array of all the phrases
     var phrases = data.split('\n');
     var numberOfPhrases = phrases.length;
-    var random = randomNumber(0, numberOfPhrases - 1);
+    var random = Math.floor(Math.random() * numberOfPhrases);
     // gets a random phrase
     var randomPhrase = phrases[random];
     // makes sure any phrase containting ':name:' is removed
@@ -34,8 +101,6 @@ async function getPhraseAndHoliday() {
     const request = require('request-promise');
     const $ = require('cheerio');
 
-
-    var date = new Date();
     var months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 
     var month = date.getMonth();
@@ -46,16 +111,19 @@ async function getPhraseAndHoliday() {
     var url = "http://www.holidayscalendar.com/day/" + currentMonth + "-" + day + "/";
     //var url = "http://www.holidayscalendar.com/day/march-14/";
 
-    
+
     await request(url)
         .then(function (html) {
             // success
             var table = $('tr > td', html);
-    
+
             // should both be equal in length when all is said and done
             var holidays = [];
             var locations = [];
-    
+
+            /* loops through the table and adds every third element (starting at the first element) to the holidays table,
+             * and also starts at element two and goes to every third element from there on out and adds that to the locations table
+             */
             for (var i = 0; i < table.length; i++) {
                 if ((i % 3) == 0) {
                     holidays.push($(table[i]).text());
@@ -66,11 +134,12 @@ async function getPhraseAndHoliday() {
                     }
                 }
             }
-            
-            var randomNumber = Math.floor(Math.random() * ((holidays.length)));
-            var holidayToday = holidays[randomNumber];
+
+            var random = Math.floor(Math.random() * ((holidays.length)));
+            var holidayToday = holidays[random];
             holidayToday = holidayToday.split('*')[0].trim().split('observed')[0].trim();
-            var location = locations[randomNumber].trim();
+            var location = locations[random].trim();
+            // some of the table information is blank, so in that case we add our own touch
             if (location == "-") {
                 location = "no particular location";
             }
@@ -83,59 +152,6 @@ async function getPhraseAndHoliday() {
             // problem accessing the site/accessing the contents
             console.log(err);
         });
-    return result; 
+    return result;
 }
-
-const dotenv = require('dotenv')
-dotenv.config()
-
-const { App } = require('@slack/bolt');
-const bot = new App({
-    token: process.env.BOT_TOKEN,
-    signingSecret: process.env.SIGNING_SECRET,
-    name: 'Bruce Bot 3000'
-});
-
-
-async function schedule(client, channel_id) {
-    const t = await getPhraseAndHoliday();
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(9, 0, 0);
-
-    const epochTime = Math.round(Date.now() / 1000);
-    const endTime = epochTime + 50;
-    try {
-        // Call chat.scheduleMessage with the built-in client
-        const result = await client.chat.scheduleMessage({
-            channel: channel_id,
-            post_at: endTime,
-            text: t
-        });
-        console.log(result);
-        //schedule(client, channel_id);
-    }
-    catch (error) {
-        console.error(error);
-    }
-}
-
-
-bot.message('I want reminders!', async ({ message, say, client }) => {
-    // say() sends a message to the channel where the event was triggered
-    if (message.channel_id == client.im.channel_id) {
-        await say("You've signed up to receive Bruce Bot reminders!");
-        schedule(client, message.channel);
-    }   
-});
-
-
-
-(async () => {
-    await bot.start(3000); // Launch the bot
-    console.log("Bolt app is running!");
-})();
-
-
-//open(url);
 
