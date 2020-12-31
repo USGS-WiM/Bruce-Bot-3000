@@ -17,7 +17,7 @@ var date = new Date();
         const slackResponse = await sendSlackMessage(webHookURL, message);
         console.log('Message response', slackResponse);
     } catch (e) {
-        console.error('There was a error with the request', e);
+        console.error('There was a error with the request, try again another time', e);
     }
 })();
 
