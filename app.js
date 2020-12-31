@@ -2,22 +2,26 @@
 
 const https = require('https');
 
-// only custom thing we need to change for the specific channel we want to use. This webhook links up to one of my channels on my page
-const webHookURL = "ENTER YOUR WEB HOOK URL HERE";
+// only custom thing we need to change/add for the specific channel we want to use. This webhook links up to one of my channels on my page
+const webHookURL = "ENTER YOUR WEBHOOK URL HERE";
 
+// create a blank new Date, referring to today (whenever this program is run)
+var date = new Date();
 
 // we can create a loop in here if we want so it sends a message every day, or use aws lambda
 (async function () {
 
     console.log('Sending slack message');
     try {
-        const message = await getPhraseAndHoliday(new Date());
+        const message = await getPhraseAndHoliday(date);
         const slackResponse = await sendSlackMessage(webHookURL, message);
         console.log('Message response', slackResponse);
     } catch (e) {
         console.error('There was a error with the request', e);
     }
 })();
+
+
 
 
 function sendSlackMessage(webHookURL, message) {
@@ -95,9 +99,172 @@ async function getPhraseAndHoliday(date) {
     // makes sure any phrase containting ':name:' is removed
     randomPhrase = randomPhrase.split(':')[0];
 
+    // second half, generate a random holiday for the current day using the json file
+    var months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+
+    var day = "" + months[date.getMonth()] + "_" + date.getDate();
+
+    const allHolidays = require("./holidays" + date.getFullYear() + ".json");
+    var values = "";
+
+    for (var i in allHolidays) {
+        if (i.trim() == day) {
+            values = allHolidays[i];
+        }
+    }
+
+    // now that we have the holidays for the given date in an array, we can randomly choose one
+    var fullHoliday = values[(Math.floor(Math.random() * values.length))];
+ 
+    var holiday = fullHoliday.split(",")[0];
+    var location = fullHoliday.split(",")[1];
+    if (location == " no particular location") {
+        location = " no particular region";
+    }
+
+    result = randomPhrase + "\n" + "Today's featured holiday (celebrated in" + location + ") is " + holiday + ", in case you wanted to know. Now sign in!";
+    
+    return result;
+}
 
 
+/**
+ * Function used to download the holiday information and store them in json files. Not used when running the program, only to download
+ * more holidays for upcoming years
+ * @param {any} year
+ */
+async function jsonify(year) {
+
+    const fs = require('fs');
+    var logger = fs.createWriteStream('holidays' + year + '.json', {
+        flags: 'a' // 'a' means appending (old data will be preserved)
+    })
+
+    const request = require('request-promise');
+    const $ = require('cheerio');
+
+    var months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+
+    var currentURL = "";
+    var stringForJSONFile = "{ \n";
+
+    var day = 1;
+    var month = 0;
+    var max_days = 365;
+    var leap_day = 0;
+    if ((year % 4) == 0) {
+        max_days = 366;
+        leap_day = -1;
+    }
+    
+    for (var i = 1; i < max_days + 1; i++) {
+
+        if (day == 32 && month == 0) {
+            month = 1;
+            day = 1;
+        } else if ((day + leap_day) == 29 && month == 1) {
+            month = 2;
+            day = 1;
+        } else if (day == 32 && month == 2) {
+            month = 3;
+            day = 1;
+        } else if (day == 31 && month == 3) {
+            month = 4;
+            day = 1;
+        } else if (day == 32 && month == 4) {
+            month = 5;
+            day = 1;
+        } else if (day == 31 && month == 5) {
+            month = 6;
+            day = 1;
+        } else if (day == 32 && month == 6) {
+            month = 7;
+            day = 1;
+        } else if (day == 32 && month == 7) {
+            month = 8;
+            day = 1;
+        } else if (day == 31 && month == 8) {
+            month = 9;
+            day = 1;
+        } else if (day == 32 && month == 9) {
+            month = 10;
+            day = 1;
+        } else if (day == 31 && month == 10) {
+            month = 11;
+            day = 1;
+        }
+
+        currentURL = "http://www.holidayscalendar.com/day/" + months[month] + "-" + day + "-" + year + "/";
+
+        await request(currentURL)
+            .then(function (html) {
+
+                stringForJSONFile += '"' + months[month] + '_' + day + '": [ \n     ';
+
+                var table = $('tr > td', html);
+                var holiday = "";
+                var location = "";
+
+                /* loops through the table and adds every third element (starting at the first element) to the holidays table,
+                 * and also starts at element two and goes to every third element from there on out and adds that to the locations table
+                 */
+                
+                for (var i = 0; i < table.length; i++) {
+                    if ((i % 3) == 0) {
+                        holiday = $(table[i]).text().trim();
+                        stringForJSONFile += '"' + holiday + ', ';
+                    }
+                    if (i > 0) {
+                        if (((i - 1) % 3) == 0) {
+                            location = $(table[i]).text().trim();
+                            if (location == "-") {
+                                location = "no particular location";
+                            }
+                            else if (location == "Multiple [Show]") {
+                                location = "many different places";
+                            }
+                            if (i + 3 >= table.length) {
+                                stringForJSONFile += location + '"\n     ';
+                            }
+                            else {
+                                stringForJSONFile += location + '",\n     ';
+                            }
+                        }
+                    }
+                }
+                if (i == max_days) {
+                    stringForJSONFile += ']\n';
+                }
+                else {
+                    stringForJSONFile += '],\n';
+                }
+                logger.write(stringForJSONFile);
+                stringForJSONFile = "";
+
+
+            })
+            .catch(function (err) {
+                // problem accessing the site/accessing the contents
+                console.log(err);
+            });
+        day++;
+    }
+    
+    logger.write("\n}");
+    logger.close();
+}
+
+
+
+/**
+ * Function that web scrapes a holiday for a particular day. Not used in this program
+ * @param {any} date
+ */
+async function webscrape(date) {
     // second half, generate a random holiday for the current day
+
+    var result = "";
+
     const request = require('request-promise');
     const $ = require('cheerio');
 
@@ -154,4 +321,3 @@ async function getPhraseAndHoliday(date) {
         });
     return result;
 }
-
