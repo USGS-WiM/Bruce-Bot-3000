@@ -23,7 +23,11 @@ var date = new Date();
 
 
 
-
+/**
+ * Function that sends a message to a specific slack channel  via the given webhook url
+ * @param {any} webHookURL the Web hook URL we are using to send a message to a specific channel
+ * @param {any} message the message we want to send
+ */
 function sendSlackMessage(webHookURL, message) {
 
     const messageBody = {
@@ -131,7 +135,7 @@ async function getPhraseAndHoliday(date) {
 /**
  * Function used to download the holiday information and store them in json files. Not used when running the program, only to download
  * more holidays for upcoming years
- * @param {any} year
+ * @param {any} year the year of holidays we want to jsonify
  */
 async function jsonify(year) {
 
@@ -258,7 +262,7 @@ async function jsonify(year) {
 
 /**
  * Function that web scrapes a holiday for a particular day. Not used in this program
- * @param {any} date
+ * @param {any} date the particular date we want to get the holiday for
  */
 async function webscrape(date) {
     // second half, generate a random holiday for the current day
