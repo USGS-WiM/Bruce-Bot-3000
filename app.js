@@ -3,7 +3,7 @@
 const https = require('https');
 
 // only custom thing we need to change/add for the specific channel we want to use. This webhook links up to one of my channels on my page
-const webHookURL = "ENTER YOUR WEBHOOK URL HERE";
+const webHookURL = "ENTER YOUR WEB HOOK URL HERE";
 
 // create a blank new Date, referring to today (whenever this program is run)
 var date = new Date();
@@ -17,7 +17,7 @@ var date = new Date();
         const slackResponse = await sendSlackMessage(webHookURL, message);
         console.log('Message response', slackResponse);
     } catch (e) {
-        console.error('There was a error with the request, try again another time', e);
+        console.error('There was a error with the request', e);
     }
 })();
 
@@ -126,7 +126,7 @@ async function getPhraseAndHoliday(date) {
         location = " no particular region";
     }
 
-    result = randomPhrase + "\n" + "Today's featured holiday (celebrated in" + location + ") is " + holiday + ", in case you wanted to know. Now sign in!";
+    result = randomPhrase + "\n" + "Today's featured holiday (celebrated in" + location + ") is " + holiday + ". Now sign in!";
     
     return result;
 }
@@ -134,7 +134,7 @@ async function getPhraseAndHoliday(date) {
 
 /**
  * Function used to download the holiday information and store them in json files. Not used when running the program, only to download
- * more holidays for upcoming years
+ * more holidays for upcoming years. Note: very few comments for the code of this function
  * @param {any} year the year of holidays we want to jsonify
  */
 async function jsonify(year) {
