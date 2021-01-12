@@ -27,7 +27,7 @@ jobs:
         uses: appleboy/lambda-action@master
         with:
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_KEY }}
           aws_region: us-east-1
           function_name: runBruceBot
           zip_file: bundle.zip
