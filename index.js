@@ -3,15 +3,13 @@
 const https = require('https');
 
 // only custom thing we need to change/add for the specific channel we want to use. This webhook links up to one of my channels on my page
-const webHookURL = "ENTER YOUR WEB HOOK URL HERE";
+const webHookURL = "YOUR WEBHOOK HERE";
 
 // create a blank new Date, referring to today (whenever this program is run)
 var date = new Date();
-
 // we can create a loop in here if we want so it sends a message every day, or use aws lambda
 (async function () {
 
-    console.log('Sending slack message');
     try {
         const message = await getPhraseAndHoliday(date);
         const slackResponse = await sendSlackMessage(webHookURL, message);
@@ -29,6 +27,8 @@ var date = new Date();
  * @param {any} message the message we want to send
  */
 function sendSlackMessage(webHookURL, message) {
+
+    console.log('Sending slack message');
 
     const messageBody = {
         username: 'Bruce Bot Reminder', // This will appear as user name who posts the message
@@ -82,55 +82,136 @@ function sendSlackMessage(webHookURL, message) {
  * @param {any} date the Date object of the particular day one wants to gather holiday information from
  */
 async function getPhraseAndHoliday(date) {
-    // default answer
-    var result = "Today we failed getting the holiday information, for some reason. Regardless, check in!";
 
-    // first half, generate a random phrase from the given text file
-    const fs = require('fs');
+    var result = "Happy " + day + "!\n";
+    var bruceFailure = "Unfortunately an error prevented us from gathering a Bruce quote for today.\n";
+    var holidayFailure = "Unfortunately an error prevented us from gathering a featured holiday for today.\n";
 
-    // load the file
-    try {
-        var data = fs.readFileSync('WIM-quotable-quotes_2020-12-28.txt', 'utf8');
-    } catch (e) {
-        console.log('Problem loading the requested file. ', e.stack);
-    }
-    // a array of all the phrases
-    var phrases = data.split('\n');
-    var numberOfPhrases = phrases.length;
-    var random = Math.floor(Math.random() * numberOfPhrases);
-    // gets a random phrase
-    var randomPhrase = phrases[random];
-    // makes sure any phrase containting ':name:' is removed
-    randomPhrase = randomPhrase.split(':')[0];
-
-    // second half, generate a random holiday for the current day using the json file
+    // first half, generate a random holiday for the current day using the json file
     var months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 
     var day = "" + months[date.getMonth()] + "_" + date.getDate();
 
-    const allHolidays = require("./holidays" + date.getFullYear() + ".json");
-    var values = "";
+    // gather holiday information from the holiday file stored in the S3
+    const AWS = require('aws-sdk');
+    const s3 = new AWS.S3({
+        accessKeyId: "ACCESS KEY HERE",
+        secretAccessKey: "SECRET ACCESS KEY HERE",
+        Bucket: "NAME"
+    });
+    var params = {
+        Bucket: "NAME",
+        Key: "holidays" + date.getFullYear() + ".json"
+    };
+    const fs = require('fs');
 
-    for (var i in allHolidays) {
-        if (i.trim() == day) {
-            values = allHolidays[i];
+    // attempt to gather holiday information from s3
+    var worked = false;
+    try {
+        var info = "test";
+
+        const d = await new Promise((resolve, reject) => {
+            s3.getObject(params, function (err, data) {
+                if (!err) {
+                    const body = Buffer.from(data.Body).toString('utf8');
+                    info = body;
+                    resolve(data);
+                }
+                else {
+                    reject(data);
+                    throw "Error grabbing info from the holiday files from s3.";
+                }
+            })
+        });
+        if (info == "test") {
+            throw "Error grabbing info from holiday files from s3";
         }
+        // change all of the string info into a JSON variable
+        info = JSON.parse(info);
+
+        var values = "";
+        // find the value at the day we want
+        for (var i in info) {
+            if (i.trim() == day) {
+                values = info[i];
+                worked = true;
+            }
+        }
+        
+    } catch (e) {
+        console.log("Problem loading the holiday file. ", e.stack);
+        worked = false;
     }
 
-    // now that we have the holidays for the given date in an array, we can randomly choose one
-    var fullHoliday = values[(Math.floor(Math.random() * values.length))];
- 
-    var holiday = fullHoliday.split(",")[0];
-    var location = fullHoliday.split(",")[1];
-    if (location == " no particular location") {
-        location = " no particular region";
+    if (worked) {
+        // now that we have the holidays for the given date in an array, we can randomly choose one
+        var fullHoliday = values[(Math.floor(Math.random() * values.length))];
+        var holiday = fullHoliday.split(",")[0];
+
+        var location = fullHoliday.split(",")[1];
+        if (location == " no particular location") {
+            location = " no particular region";
+        }
+
+        result += "Today's featured holiday is " + holiday + ".\n\n";
+    } else {
+        result += holidayFailure;
     }
 
-    result = randomPhrase + "\n" + "Today's featured holiday (celebrated in" + location + ") is " + holiday + ". Now sign in!";
-    
+
+    // second half, generate a random bruce phrase from the given text file
+    //const fs = require('fs');
+    // load the file
+    try {
+        // changes params so now it will look at the quotables file
+        params = {
+            Bucket: "HERE",
+            Key: "WIM-quotable-quotes_2020-12-28.txt"
+        };
+
+        info = "test";
+
+        const d = await new Promise((resolve, reject) => {
+            s3.getObject(params, function (err, data) {
+                if (!err) {
+                    const body = Buffer.from(data.Body).toString('utf8');
+                    info = body;
+                    resolve(data);
+                }
+                else {
+                    reject(data);
+                    throw "Error grabbing info from the holiday files from s3.";
+                }
+            })
+        });
+        if (info == "test") {
+            throw "Error grabbing info from holiday files from s3";
+        }
+
+        var data = info;
+
+        // a array of all the phrases
+        var phrases = data.split('\n');
+        var numberOfPhrases = phrases.length;
+        var random = Math.floor(Math.random() * numberOfPhrases);
+        // gets a random phrase
+        var randomPhrase = phrases[random];
+        // makes sure any phrase containting ':name:' is removed
+        result += ":wim: WIM quote of the day :wim:\n" + randomPhrase + "";
+    } catch (e) {
+        console.log('Problem loading the requested file. ', e.stack);
+        result += bruceFailure;
+    }
     return result;
 }
 
+
+function printAllDays() {
+    var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+    // first half, generate a random holiday for the current day using the json file
+    var months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+}
 
 /**
  * Function used to download the holiday information and store them in json files. Not used when running the program, only to download
@@ -138,6 +219,27 @@ async function getPhraseAndHoliday(date) {
  * @param {any} year the year of holidays we want to jsonify
  */
 async function jsonify(year) {
+    const allHolidays = require("./holidays2024.json");
+    var everyHoliday = [];
+
+    var worked = false;
+    try {
+        var values = "";
+
+        for (var i in allHolidays) {
+            var stringVersion = JSON.stringify(allHolidays[i]);
+            stringVersion = stringVersion.split("[")[1];
+            stringVersion = stringVersion.split("]")[0];
+            stringVersion = stringVersion.split(",")[0];
+            stringVersion = stringVersion.replace('"', '');
+            everyHoliday.push(stringVersion);
+        }
+
+    } catch (e) {
+        console.log("Problem loading the holiday file. ", e.stack);
+    }
+
+
 
     const fs = require('fs');
     var logger = fs.createWriteStream('holidays' + year + '.json', {
@@ -199,7 +301,6 @@ async function jsonify(year) {
         }
 
         currentURL = "http://www.holidayscalendar.com/day/" + months[month] + "-" + day + "-" + year + "/";
-
         await request(currentURL)
             .then(function (html) {
 
@@ -208,14 +309,32 @@ async function jsonify(year) {
                 var table = $('tr > td', html);
                 var holiday = "";
                 var location = "";
+                var useInstead = stringForJSONFile;
+                var useFlag = false;
 
                 /* loops through the table and adds every third element (starting at the first element) to the holidays table,
                  * and also starts at element two and goes to every third element from there on out and adds that to the locations table
                  */
-                
+                outerloop:
                 for (var i = 0; i < table.length; i++) {
                     if ((i % 3) == 0) {
                         holiday = $(table[i]).text().trim();
+                        for (var k = 0; k < everyHoliday.length; k++) {
+                            // if the holiday matches one of the known holidays, add that to the json 
+                            if (everyHoliday[k].trim() === holiday.trim()) {
+                                location = $(table[i + 1]).text().trim();
+                                
+                                if (location == "-") {
+                                    location = "no particular location";
+                                }
+                                else if (location == "Multiple [Show]") {
+                                    location = "many different places";
+                                }
+                                useInstead += '"' + holiday + ', ' + location + '"\n     '; 
+                                useFlag = true;
+                                break outerloop;
+                            }
+                        }
                         stringForJSONFile += '"' + holiday + ', ';
                     }
                     if (i > 0) {
@@ -236,14 +355,28 @@ async function jsonify(year) {
                         }
                     }
                 }
+
+
                 if (i == max_days) {
                     stringForJSONFile += ']\n';
+                    useInstead += ']\n';
                 }
                 else {
                     stringForJSONFile += '],\n';
+                    useInstead += '],\n';
                 }
-                logger.write(stringForJSONFile);
-                stringForJSONFile = "";
+
+
+                if (useFlag) {
+                    logger.write(useInstead);
+                    useInstead = "";
+                    stringForJSONFile = "";
+                }
+                else {
+                    logger.write(stringForJSONFile);
+                    useInstead = "";
+                    stringForJSONFile = "";
+                }
 
 
             })

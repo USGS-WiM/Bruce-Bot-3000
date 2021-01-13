@@ -2,11 +2,12 @@
   "name": "slack-bot-usgs",
   "version": "1.1.0",
   "description": "SlackBotUSGS",
-  "main": "app.js",
+  "main": "index.js",
   "author": {
     "name": "Christopher Sullivan"
   },
   "dependencies": {
+    "aws-sdk": "^2.826.0",
     "cheerio": "^1.0.0-rc.5",
     "request": "^2.88.2",
     "request-promise": "^4.2.6"
