@@ -3,14 +3,54 @@
 const https = require('https');
 
 // only custom thing we need to change/add for the specific channel we want to use. This webhook links up to one of my channels on my page
-const webHookURL = "YOUR WEBHOOK HERE";
+const webHookURL = "ENTER SLACKBOT WEBHOOK URL HERE";
+const bucketName = "ENTER NAME OF THE BUCKET THAT STORES THE HOLIDAY AND BRUCE QUOTE FILES";
+const AWSAccessKey = "ENTER YOUR AWS ACCESS KEY";
+const AWSSecretKey = "ENTER YOUR AWS SECRET KEY";
 
-// create a blank new Date, referring to today (whenever this program is run)
-var date = new Date();
-// we can create a loop in here if we want so it sends a message every day, or use aws lambda
+
+/*
+ * WHEN INSIDE THE LAMBDA FUNCTION: use the following block of code to replace the section of code labeled 'REPLACE THIS'
+ * 
+ * 
+exports.handler = async (event) => {
+    var response = {
+        statusCode: 200,
+        body: JSON.stringify("Let's see if this works..."),
+    };
+
+    // create a blank new Date, referring to today (whenever this program is run)
+    var date = new Date();
+    await (async function () {
+        try {
+            // try to create a message and send it to Slack
+            const message = await getPhraseAndHoliday(date);
+            const slackResponse = await sendSlackMessage(webHookURL, message);
+            console.log('Message response', slackResponse);
+            response = {
+              statusCode: 200,
+              body: JSON.stringify(message),
+            };
+        } catch (e) {
+            console.error('There was a error with the request', e);
+            response = {
+              statusCode: 200,
+              body: JSON.stringify("Didn't work, here's why: " + e),
+            };
+        }
+    })();
+    return response;
+};
+ * 
+ */
+
+
+// REPLACE THIS: when in the AWS lambda function, replace this async function with the code provided above
+// only used for testing on a personal system
 (async function () {
 
     try {
+        var date = new Date();
         const message = await getPhraseAndHoliday(date);
         const slackResponse = await sendSlackMessage(webHookURL, message);
         console.log('Message response', slackResponse);
@@ -22,8 +62,8 @@ var date = new Date();
 
 
 /**
- * Function that sends a message to a specific slack channel  via the given webhook url
- * @param {any} webHookURL the Web hook URL we are using to send a message to a specific channel
+ * Function that sends a message to a specific slack channel via the given webhook url
+ * @param {any} webHookURL the Webhook URL we are using to send a message to a specific channel
  * @param {any} message the message we want to send
  */
 function sendSlackMessage(webHookURL, message) {
@@ -31,7 +71,7 @@ function sendSlackMessage(webHookURL, message) {
     console.log('Sending slack message');
 
     const messageBody = {
-        username: 'Bruce Bot Reminder', // This will appear as user name who posts the message
+        username: 'Bruce Bot', // This will appear as user name who posts the message
         text: message // text
     };
 
@@ -77,11 +117,14 @@ function sendSlackMessage(webHookURL, message) {
 
 
 /**
- * Function that parses the "quotable-quotes" file and finds a random quote, then combines that quote with a random holiday that occurs
- * on the given Date. Currently scrapes holidaycalendars.com to gather holiday information
+ * Function that parses the "BruceQuotes.txt" file and finds a random quote, then combines that quote with a holiday that occurs
+ * on the given Date (from the holiday20--.json files). 
  * @param {any} date the Date object of the particular day one wants to gather holiday information from
  */
 async function getPhraseAndHoliday(date) {
+    
+    var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    var day = days[date.getDay()];
 
     var result = "Happy " + day + "!\n";
     var bruceFailure = "Unfortunately an error prevented us from gathering a Bruce quote for today.\n";
@@ -95,12 +138,12 @@ async function getPhraseAndHoliday(date) {
     // gather holiday information from the holiday file stored in the S3
     const AWS = require('aws-sdk');
     const s3 = new AWS.S3({
-        accessKeyId: "ACCESS KEY HERE",
-        secretAccessKey: "SECRET ACCESS KEY HERE",
-        Bucket: "NAME"
+        accessKeyId: AWSAccessKey,
+        secretAccessKey: AWSSecretKey,
+        Bucket: bucketName
     });
     var params = {
-        Bucket: "NAME",
+        Bucket: bucketName,
         Key: "holidays" + date.getFullYear() + ".json"
     };
     const fs = require('fs');
@@ -144,14 +187,16 @@ async function getPhraseAndHoliday(date) {
     }
 
     if (worked) {
-        // now that we have the holidays for the given date in an array, we can randomly choose one
+        // now that we have the holidays for the given date stored in an array, we can randomly choose one
         var fullHoliday = values[(Math.floor(Math.random() * values.length))];
         var holiday = fullHoliday.split(",")[0];
 
+        /* location not used anymore
         var location = fullHoliday.split(",")[1];
         if (location == " no particular location") {
             location = " no particular region";
         }
+        */
 
         result += "Today's featured holiday is " + holiday + ".\n\n";
     } else {
@@ -159,16 +204,20 @@ async function getPhraseAndHoliday(date) {
     }
 
 
+
+
+
+
+
     // second half, generate a random bruce phrase from the given text file
-    //const fs = require('fs');
-    // load the file
     try {
-        // changes params so now it will look at the quotables file
+        // changes params so now it will look at the BruceBot file
         params = {
-            Bucket: "HERE",
-            Key: "WIM-quotable-quotes_2020-12-28.txt"
+            Bucket: bucketName,
+            Key: "BruceQuotes.txt"
         };
 
+        // double fail safe to make sure the file was loaded properly
         info = "test";
 
         const d = await new Promise((resolve, reject) => {
@@ -180,7 +229,7 @@ async function getPhraseAndHoliday(date) {
                 }
                 else {
                     reject(data);
-                    throw "Error grabbing info from the holiday files from s3.";
+                    throw "Error grabbing info from the holiday files from s3. " + data;
                 }
             })
         });
@@ -189,14 +238,13 @@ async function getPhraseAndHoliday(date) {
         }
 
         var data = info;
-
-        // a array of all the phrases
+        // stores an array of all the phrases
         var phrases = data.split('\n');
         var numberOfPhrases = phrases.length;
         var random = Math.floor(Math.random() * numberOfPhrases);
+
         // gets a random phrase
         var randomPhrase = phrases[random];
-        // makes sure any phrase containting ':name:' is removed
         result += ":wim: WIM quote of the day :wim:\n" + randomPhrase + "";
     } catch (e) {
         console.log('Problem loading the requested file. ', e.stack);
@@ -206,12 +254,27 @@ async function getPhraseAndHoliday(date) {
 }
 
 
-function printAllDays() {
-    var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
-    // first half, generate a random holiday for the current day using the json file
-    var months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /**
  * Function used to download the holiday information and store them in json files. Not used when running the program, only to download

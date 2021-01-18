@@ -30,9 +30,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include="index.js" />
-    <Content Include="oldcode.txt">
-      <SubType>Code</SubType>
-    </Content>
     <Content Include="package.json" />
     <Content Include="README.md" />
   </ItemGroup>
