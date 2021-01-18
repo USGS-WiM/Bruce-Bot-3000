@@ -4,7 +4,7 @@
 # Bruce Bot
 
 Program that sends a message to a WIM slack channel containing the current day's featured holiday and a randomly chosen "Bruce Quote". The
-information is gathered from the "holidays20--.json" and "BruceQuotes.txt" files, which should be uploaded to an AWS S3.
+information is gathered from the "holidays20xx.json" and "BruceQuotes.txt" files, which should be uploaded to an AWS S3.
 
 ### Prerequisites
 
@@ -38,16 +38,17 @@ To see if everything works, run this:
 ```
 node index.js
 ``` 
+A message should be sent to the Slack channel that your Webhook URL is directed to. 
 
 ### Installing/Deploying onto a Lambda function
 
 Begin by creating a new Lambda function (name is something like 'bruceBot' and for runTime use 'Node.js 12.x'). IMPORTANT: 
 Under the 'Configuration' header for this function, make sure you edit the 'Timeout' option to at least 10 seconds.
 
-![Lambda](lambdatimeout.png)
+![Lambda](lambdatimeout.PNG)
 
 Since this project is over 3MB when zipped, this built in code editor in Lambda will not display the files we need to change. To get around this,
-we need to make a layer that includes all of the Node modules used. First, in a file explorer, select the 'node_modules' folder in this
+we need to make a layer that includes all of the Node.js modules used. First, in a file explorer, select the 'node_modules' folder in this
 project and zip this folder (Right click and Send to -> Compressed Zip Folder). Next, on the sidebar of the AWS Lambda, 
 go to 'Layers' under the Additional Resources header.
 
@@ -60,10 +61,10 @@ Back in the 'bruceBot' lambda function, scroll all the way down to the 'Layers' 
 and choose the 'node_modules' layer that we just created. We are now almost done: we just need to upload the actual script to the 
 Lambda code section.
 
-For this final step, in the lambda function Code Source viewer, delete the auto-created 'index.js' file. Next, in a file explorer directed
+For this final step, in the lambda function Code Source viewer, delete the auto-created 'index.js' file. Next, in a File Explorer directed
 to this project's directory, create a new folder (call it 'code') and copy the following files/folders from this project into that folder: 
 the 'bin' folder and 'obj' folder (if these exist), 'package-lock.json', 'package.json', and 'index.js'. Now with this 'code' folder with all
-of those files in it create a zip folder. Back in the Code Source viewer, on the upper right hand side, use the 'Upload from' button to upload
+of those files in it, create a zip folder. Back in the Code Source viewer, on the upper right hand side, use the 'Upload from' button to upload
 the new 'code' zip folder. The last thing to do is to move all of these uploaded files (the 'bin' folder and 'obj' folder (if these exist), 'package-lock.json', 'package.json', 
 and 'index.js') out of the 'code' folder in the Code Source environment file viewer, and move them so they are directly under
 the base 'bruceBot' folder. This is so the function will be able to reach the index.js script. 
@@ -79,7 +80,7 @@ viewer in your Lambda function so that the uploaded 'index.js' file will run the
 If you want this function to run at certain times, it's helpful to use AWS CloudWatch. Go to https://console.aws.amazon.com/cloudwatch/home 
 and under 'Events', create a New Rule. Select the 'Schedule' radio button, and click 'Add target', and select your lambda function. Under
 the scheduler, you can choose to run the function at a fixed rate, or enter a CRON expression. (For example, the CRON expression to run
-the script every weekday at 8:00AM is '0 14 ? * MON-FRI *'). At this new Event and presto, your lambda function will run at the scheduled
+the script every weekday at 8:00AM is '0 14 ? * MON-FRI *'). Add this new Event and presto, your lambda function will run at the scheduled
 times.
 
 ## Authors
@@ -98,6 +99,7 @@ In the spirit of open source, please cite any re-use of the source code stored i
 
 ## Acknowledgments
 
+* Based off the original idea of Hans Vraga
 * Hat tip to anyone who's code was used
 * Inspiration Note
 
