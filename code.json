@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Bruce Bot",
+    "organization": "U.S. Geological Survey",
+    "description": "Slack bot for reminders",
+    "version": "v1.0.0",
+    "status": ["Beta"],
+
+    "permissions": {
+      "usageType": "openSource",
+      "licenses": [
+        {
+          "name": "Public Domain, CC0-1.0",
+          "URL": "https://github.com/usgs/best-practices/blob/master/LICENSE.md"
+        }
+      ]
+    },
+
+    "homepageURL": "https://wim.usgs.gov",
+    "downloadURL": "https://github.com/USGS-WiM/Bruce-Bot-3000",
+    "disclaimerURL": "https://github.com/USGS-WiM/Bruce-Bot-3000/blob/master/DISCLAIMER.md",
+    "repositoryUrl": "https://github.com/USGS-WiM/Bruce-Bot-3000",
+    "vcs": "git",
+
+    "laborHours": null,
+
+    "tags": [
+      "script",
+    ],
+
+    "languages": [
+      "javascript"
+    ],
+
+    "contact": {
+      "name": "Hans Vraga",
+      "email": "hbraga@usgs.gov"
+    },
+
+    "date": {
+      "metadataLastUpdated": "2020-01-19"
+    }
+  }
+]
