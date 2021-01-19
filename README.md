@@ -3,7 +3,7 @@
 
 # Bruce Bot
 
-Program that sends a message to a WIM slack channel containing the current day's featured holiday and a randomly chosen "Bruce Quote". The
+Program that sends a message to a WIM slack channel containing the current day's featured holiday and a randomly chosen "WIM Quote". The
 information is gathered from the "holidays20xx.json" and "BruceQuotes.txt" files, which should be uploaded to an AWS S3.
 
 ### Prerequisites
